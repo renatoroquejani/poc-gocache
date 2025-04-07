@@ -50,6 +50,59 @@ http://localhost:8081/swagger/index.html
 - `pkg/gocache`: Cliente para API da Gocache
 - `docs`: Documentação do Swagger
 
+## Limpeza de Cache
+
+A API oferece duas opções para limpeza de cache:
+
+### 1. Limpeza total do cache de um domínio
+
+Para limpar todo o cache de um domínio específico, utilize o endpoint:
+
+```
+DELETE /api/v1/cache/purge-all/{domainName}
+```
+
+Exemplo usando PowerShell:
+
+```powershell
+Invoke-RestMethod -Method DELETE -Uri "http://localhost:8081/api/v1/cache/purge-all/example.com"
+```
+
+### 2. Limpeza de URLs específicas (com suporte a wildcards)
+
+Para limpar o cache de URLs específicas, utilize o endpoint:
+
+```
+DELETE /api/v1/cache/purge-urls
+```
+
+Com o seguinte payload JSON:
+
+```json
+{
+  "domain": "example.com",
+  "urls": [
+    "https://example.com/imagens/logo.png",
+    "https://example.com/css/style.css",
+    "https://example.com/js/*" // Wildcard para limpar todos os arquivos JavaScript
+  ]
+}
+```
+
+Exemplo usando PowerShell:
+
+```powershell
+$body = @{
+    "domain" = "example.com"
+    "urls" = @(
+        "https://example.com/path/to/resource.jpg",
+        "https://example.com/blog/*"
+    )
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method DELETE -Uri "http://localhost:8081/api/v1/cache/purge-urls" -Body $body -ContentType "application/json"
+```
+
 ## Cenários de Uso para o Projeto ONM
 
 Para o projeto ONM, temos 2 cenários de configuração:
