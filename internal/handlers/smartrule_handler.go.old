@@ -1,0 +1,235 @@
+package handlers
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/renatoroquejani/poc-gocache/internal/models"
+	"github.com/renatoroquejani/poc-gocache/internal/services"
+)
+
+// SmartRuleHandler manipula as requisições relacionadas a smart rules
+type SmartRuleHandler struct {
+	service *services.SmartRuleService
+}
+
+// NewSmartRuleHandler cria uma nova instância de SmartRuleHandler
+func NewSmartRuleHandler(service *services.SmartRuleService) *SmartRuleHandler {
+	return &SmartRuleHandler{
+		service: service,
+	}
+}
+
+// RegisterRoutes registra as rotas no router do Gin
+func (h *SmartRuleHandler) RegisterRoutes(router *gin.RouterGroup) {
+	smartRuleGroup := router.Group("/smartrules")
+	{
+		smartRuleGroup.GET("/:domainId", h.ListSmartRules)
+		smartRuleGroup.GET("/:domainId/:id", h.GetSmartRule)
+		smartRuleGroup.POST("", h.CreateSmartRule)
+		smartRuleGroup.POST("/s3", h.CreateS3SmartRule)
+		smartRuleGroup.PUT("/:domainId/:id", h.UpdateSmartRule)
+		smartRuleGroup.DELETE("/:domainId/:id", h.DeleteSmartRule)
+	}
+}
+
+// ListSmartRules godoc
+// @Summary Lista todas as smart rules de um domínio
+// @Description Retorna uma lista de todas as smart rules para um domínio específico
+// @Tags SmartRules
+// @Accept json
+// @Produce json
+// @Param domainId path int true "ID do domínio"
+// @Success 200 {object} models.SmartRuleListResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /smartrules/{domainId} [get]
+func (h *SmartRuleHandler) ListSmartRules(c *gin.Context) {
+	domainIdStr := c.Param("domainId")
+	domainId, err := strconv.Atoi(domainIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de domínio inválido"})
+		return
+	}
+
+	response, err := h.service.ListSmartRules(domainId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetSmartRule godoc
+// @Summary Obtém uma smart rule específica
+// @Description Retorna os detalhes de uma smart rule específica
+// @Tags SmartRules
+// @Accept json
+// @Produce json
+// @Param domainId path int true "ID do domínio"
+// @Param id path int true "ID da smart rule"
+// @Success 200 {object} models.SmartRuleResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /smartrules/{domainId}/{id} [get]
+func (h *SmartRuleHandler) GetSmartRule(c *gin.Context) {
+	domainIdStr := c.Param("domainId")
+	domainId, err := strconv.Atoi(domainIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de domínio inválido"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	response, err := h.service.GetSmartRule(domainId, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// CreateSmartRule godoc
+// @Summary Cria uma nova smart rule
+// @Description Cria uma nova smart rule para um domínio
+// @Tags SmartRules
+// @Accept json
+// @Produce json
+// @Param request body models.SmartRuleCreateRequest true "Dados da smart rule"
+// @Success 201 {object} models.SmartRuleResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /smartrules [post]
+func (h *SmartRuleHandler) CreateSmartRule(c *gin.Context) {
+	var request models.SmartRuleCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response, err := h.service.CreateSmartRule(request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
+// CreateS3SmartRule godoc
+// @Summary Cria uma smart rule apontando para bucket S3
+// @Description Cria uma nova smart rule para um domínio apontando para um bucket S3
+// @Tags SmartRules
+// @Accept json
+// @Produce json
+// @Param request body models.S3SmartRuleRequest true "Dados da smart rule do S3"
+// @Success 201 {object} models.SmartRuleResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /smartrules/s3 [post]
+func (h *SmartRuleHandler) CreateS3SmartRule(c *gin.Context) {
+	var request models.S3SmartRuleRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response, err := h.service.CreateS3SmartRule(request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
+// UpdateSmartRule godoc
+// @Summary Atualiza uma smart rule existente
+// @Description Atualiza os dados de uma smart rule existente
+// @Tags SmartRules
+// @Accept json
+// @Produce json
+// @Param domainId path int true "ID do domínio"
+// @Param id path int true "ID da smart rule"
+// @Param request body models.SmartRuleUpdateRequest true "Dados da smart rule"
+// @Success 200 {object} models.SmartRuleResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /smartrules/{domainId}/{id} [put]
+func (h *SmartRuleHandler) UpdateSmartRule(c *gin.Context) {
+	domainIdStr := c.Param("domainId")
+	domainId, err := strconv.Atoi(domainIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de domínio inválido"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	var request models.SmartRuleUpdateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response, err := h.service.UpdateSmartRule(domainId, id, request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// DeleteSmartRule godoc
+// @Summary Remove uma smart rule
+// @Description Remove uma smart rule existente
+// @Tags SmartRules
+// @Accept json
+// @Produce json
+// @Param domainId path int true "ID do domínio"
+// @Param id path int true "ID da smart rule"
+// @Success 200 {object} models.SmartRuleDeleteResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /smartrules/{domainId}/{id} [delete]
+func (h *SmartRuleHandler) DeleteSmartRule(c *gin.Context) {
+	domainIdStr := c.Param("domainId")
+	domainId, err := strconv.Atoi(domainIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de domínio inválido"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	response, err := h.service.DeleteSmartRule(domainId, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
