@@ -2,14 +2,14 @@ package models
 
 // CachePurgeRequest representa a requisição para expirar cache de URLs
 type CachePurgeRequest struct {
-	DomainID int      `json:"domain_id" binding:"required"`
-	URLs     []string `json:"urls" binding:"required"`
+	Domain string   `json:"domain" binding:"required"`
+	URLs   []string `json:"urls" binding:"required"`
 }
 
 // CachePurgeByPrefixRequest representa a requisição para expirar cache por prefixo
 type CachePurgeByPrefixRequest struct {
-	DomainID int    `json:"domain_id" binding:"required"`
-	Prefix   string `json:"prefix" binding:"required"`
+	Domain string `json:"domain" binding:"required"`
+	Prefix string `json:"prefix" binding:"required"`
 }
 
 // CacheInvalidationResponse representa a resposta da API para invalidação de cache

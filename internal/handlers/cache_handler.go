@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/renatoroquejani/poc-gocache/internal/models"
@@ -25,15 +24,14 @@ func NewCacheHandler(service *services.CacheService) *CacheHandler {
 func (h *CacheHandler) RegisterRoutes(router *gin.RouterGroup) {
 	cacheGroup := router.Group("/cache")
 	{
-		cacheGroup.POST("/purge", h.PurgeCache)
-		cacheGroup.POST("/purge-by-prefix", h.PurgeCacheByPrefix)
-		cacheGroup.GET("/status/:domainId", h.GetCacheStatus)
+		cacheGroup.DELETE("/purge-all/:domainName", h.PurgeAllCache)
+		cacheGroup.DELETE("/purge-urls", h.PurgeUrls)
 	}
 }
 
-// PurgeCache godoc
+// PurgeUrls godoc
 // @Summary Expira o cache de URLs específicas
-// @Description Remove o cache de URLs específicas para um domínio
+// @Description Remove o cache de URLs específicas para um domínio, podendo incluir wildcards
 // @Tags Cache
 // @Accept json
 // @Produce json
@@ -41,8 +39,8 @@ func (h *CacheHandler) RegisterRoutes(router *gin.RouterGroup) {
 // @Success 200 {object} models.CacheInvalidationResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
-// @Router /cache/purge [post]
-func (h *CacheHandler) PurgeCache(c *gin.Context) {
+// @Router /cache/purge-urls [delete]
+func (h *CacheHandler) PurgeUrls(c *gin.Context) {
 	var request models.CachePurgeRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -54,7 +52,7 @@ func (h *CacheHandler) PurgeCache(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.PurgeCache(request)
+	response, err := h.service.PurgeUrls(request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -63,30 +61,25 @@ func (h *CacheHandler) PurgeCache(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// PurgeCacheByPrefix godoc
-// @Summary Expira o cache por prefixo de URL
-// @Description Remove o cache de todas as URLs que começam com um prefixo específico
+// PurgeAllCache godoc
+// @Summary Expira todo o cache de um domínio
+// @Description Remove todo o cache de um domínio específico
 // @Tags Cache
 // @Accept json
 // @Produce json
-// @Param request body models.CachePurgeByPrefixRequest true "Dados para expiração de cache por prefixo"
+// @Param domainName path string true "Nome do domínio"
 // @Success 200 {object} models.CacheInvalidationResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
-// @Router /cache/purge-by-prefix [post]
-func (h *CacheHandler) PurgeCacheByPrefix(c *gin.Context) {
-	var request models.CachePurgeByPrefixRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// @Router /cache/purge-all/{domainName} [delete]
+func (h *CacheHandler) PurgeAllCache(c *gin.Context) {
+	domainName := c.Param("domainName")
+	if domainName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Nome de domínio inválido"})
 		return
 	}
 
-	if request.Prefix == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "O prefixo não pode estar vazio"})
-		return
-	}
-
-	response, err := h.service.PurgeCacheByPrefix(request)
+	response, err := h.service.PurgeAllCache(domainName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -95,30 +88,4 @@ func (h *CacheHandler) PurgeCacheByPrefix(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetCacheStatus godoc
-// @Summary Obtém o status do cache para um domínio
-// @Description Retorna informações sobre o status do cache para um domínio específico
-// @Tags Cache
-// @Accept json
-// @Produce json
-// @Param domainId path int true "ID do domínio"
-// @Success 200 {object} models.CacheStatusResponse
-// @Failure 400 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /cache/status/{domainId} [get]
-func (h *CacheHandler) GetCacheStatus(c *gin.Context) {
-	domainIdStr := c.Param("domainId")
-	domainId, err := strconv.Atoi(domainIdStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de domínio inválido"})
-		return
-	}
 
-	response, err := h.service.GetCacheStatus(domainId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, response)
-}

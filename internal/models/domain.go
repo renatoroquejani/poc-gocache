@@ -15,7 +15,10 @@ type DomainInfo struct {
 
 // DomainListResponse representa a resposta da API para listagem de domínios
 type DomainListResponse struct {
+	StatusCode int `json:"status_code"`
 	Response struct {
-		Domains []DomainInfo `json:"domains"`
+		Domains []string `json:"domains"`
+		Size   int      `json:"size"`
+		AutoDiscovery map[string]interface{} `json:"auto_discovery"`
 	} `json:"response"`
 }

@@ -39,7 +39,7 @@ func (s *DomainService) CreateDomain(req models.DomainCreateRequest) (map[string
 func (s *DomainService) DeleteDomain(domainID int) error {
 	var result map[string]interface{}
 	endpoint := fmt.Sprintf("/domains/%d", domainID)
-	_, err := s.client.Delete(endpoint, &result)
+	_, err := s.client.DeleteSimple(endpoint, &result)
 	if err != nil {
 		return fmt.Errorf("failed to delete domain: %w", err)
 	}
@@ -49,7 +49,7 @@ func (s *DomainService) DeleteDomain(domainID int) error {
 // ListDomains lista todos os domínios disponíveis na GoCache
 func (s *DomainService) ListDomains() (*models.DomainListResponse, error) {
 	var response models.DomainListResponse
-	endpoint := "/domains"
+	endpoint := "/domain"
 	
 	_, err := s.client.Get(endpoint, &response)
 	if err != nil {

@@ -19,49 +19,44 @@ func NewCacheService(client *gocache.Client) *CacheService {
 	}
 }
 
-// PurgeCache expira o cache para URLs específicas
-func (s *CacheService) PurgeCache(req models.CachePurgeRequest) (*models.CacheInvalidationResponse, error) {
-	endpoint := fmt.Sprintf("/domains/%d/cache/purge", req.DomainID)
+// PurgeAllCache expira todo o cache de um domínio
+func (s *CacheService) PurgeAllCache(domain string) (*models.CacheInvalidationResponse, error) {
+	// Na API GoCache, usa-se a rota /cache/{dominio}/all para expurgar todo o cache
+	endpoint := fmt.Sprintf("/cache/%s/all", domain)
 	result := &models.CacheInvalidationResponse{}
 
-	body := map[string][]string{
-		"urls": req.URLs,
-	}
-
-	_, err := s.client.Post(endpoint, body, result)
+	// Para expurgar todo o cache, enviamos um DELETE sem body
+	_, err := s.client.DeleteSimple(endpoint, result)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao expirar cache: %w", err)
+		return nil, fmt.Errorf("erro ao expirar todo o cache: %w", err)
 	}
 
 	return result, nil
 }
 
-// PurgeCacheByPrefix expira o cache para URLs que começam com um prefixo
-func (s *CacheService) PurgeCacheByPrefix(req models.CachePurgeByPrefixRequest) (*models.CacheInvalidationResponse, error) {
-	endpoint := fmt.Sprintf("/domains/%d/cache/purge-by-prefix", req.DomainID)
+// PurgeUrls expira o cache para URLs específicas, podendo incluir máscaras/wildcards
+func (s *CacheService) PurgeUrls(req models.CachePurgeRequest) (*models.CacheInvalidationResponse, error) {
+	// Na API GoCache, o domínio é parte da URL
+	endpoint := fmt.Sprintf("/cache/%s", req.Domain)
 	result := &models.CacheInvalidationResponse{}
 
+	// Prepara os dados para a requisição
 	body := map[string]string{
-		"prefix": req.Prefix,
+		"content-type": "*", // Por padrão, usamos wildcard para limpar todos os content-types
+	}
+	
+	// Adiciona cada URL como um item separado no formato urls[0], urls[1], etc.
+	// As URLs podem conter wildcards (ex: http://example.com/blog/*)
+	for i, url := range req.URLs {
+		body[fmt.Sprintf("urls[%d]", i)] = url
 	}
 
-	_, err := s.client.Post(endpoint, body, result)
+	_, err := s.client.Delete(endpoint, body, result)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao expirar cache por prefixo: %w", err)
+		return nil, fmt.Errorf("erro ao expirar cache para URLs: %w", err)
 	}
 
 	return result, nil
 }
 
-// GetCacheStatus obtém o status atual do cache para um domínio
-func (s *CacheService) GetCacheStatus(domainID int) (*models.CacheStatusResponse, error) {
-	endpoint := fmt.Sprintf("/domains/%d/cache/status", domainID)
-	result := &models.CacheStatusResponse{}
 
-	_, err := s.client.Get(endpoint, result)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao obter status do cache: %w", err)
-	}
-
-	return result, nil
-}

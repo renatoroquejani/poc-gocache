@@ -89,7 +89,7 @@ func (s *DNSService) DeleteDNS(id int) (*models.DNSDeleteResponse, error) {
 	endpoint := fmt.Sprintf("/dns/%d", id)
 	result := &models.DNSDeleteResponse{}
 
-	_, err := s.Client.Delete(endpoint, result)
+	_, err := s.Client.DeleteSimple(endpoint, result)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao excluir domínio: %w", err)
 	}

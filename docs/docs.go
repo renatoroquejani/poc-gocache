@@ -23,9 +23,55 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/cache/purge": {
-            "post": {
-                "description": "Remove o cache de URLs específicas para um domínio",
+        "/cache/purge-all/{domainName}": {
+            "delete": {
+                "description": "Remove todo o cache de um domínio específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cache"
+                ],
+                "summary": "Expira todo o cache de um domínio",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Nome do domínio",
+                        "name": "domainName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CacheInvalidationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cache/purge-urls": {
+            "delete": {
+                "description": "Remove o cache de URLs específicas para um domínio, podendo incluir wildcards",
                 "consumes": [
                     "application/json"
                 ],
@@ -52,100 +98,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.CacheInvalidationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/cache/purge-by-prefix": {
-            "post": {
-                "description": "Remove o cache de todas as URLs que começam com um prefixo específico",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cache"
-                ],
-                "summary": "Expira o cache por prefixo de URL",
-                "parameters": [
-                    {
-                        "description": "Dados para expiração de cache por prefixo",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CachePurgeByPrefixRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.CacheInvalidationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/cache/status/{domainId}": {
-            "get": {
-                "description": "Retorna informações sobre o status do cache para um domínio específico",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cache"
-                ],
-                "summary": "Obtém o status do cache para um domínio",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do domínio",
-                        "name": "domainId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.CacheStatusResponse"
                         }
                     },
                     "400": {
@@ -825,61 +777,21 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CachePurgeByPrefixRequest": {
-            "type": "object",
-            "required": [
-                "domain_id",
-                "prefix"
-            ],
-            "properties": {
-                "domain_id": {
-                    "type": "integer"
-                },
-                "prefix": {
-                    "type": "string"
-                }
-            }
-        },
         "models.CachePurgeRequest": {
             "type": "object",
             "required": [
-                "domain_id",
+                "domain",
                 "urls"
             ],
             "properties": {
-                "domain_id": {
-                    "type": "integer"
+                "domain": {
+                    "type": "string"
                 },
                 "urls": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "models.CacheStatus": {
-            "type": "object",
-            "properties": {
-                "pending": {
-                    "type": "integer"
-                },
-                "processed": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "models.CacheStatusResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/models.CacheStatus"
-                },
-                "status": {
-                    "type": "boolean"
                 }
             }
         },
@@ -1086,27 +998,29 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DomainInfo": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "models.DomainListResponse": {
             "type": "object",
             "properties": {
                 "response": {
                     "type": "object",
                     "properties": {
+                        "auto_discovery": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
                         "domains": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.DomainInfo"
+                                "type": "string"
                             }
+                        },
+                        "size": {
+                            "type": "integer"
                         }
                     }
+                },
+                "status_code": {
+                    "type": "integer"
                 }
             }
         },

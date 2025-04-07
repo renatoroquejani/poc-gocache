@@ -126,7 +126,7 @@ func (s *SmartRuleService) DeleteSmartRule(domainID, ruleID int) (*models.SmartR
 	endpoint := fmt.Sprintf("/domains/%d/smart-rules/%d", domainID, ruleID)
 	result := &models.SmartRuleDeleteResponse{}
 
-	_, err := s.client.Delete(endpoint, result)
+	_, err := s.client.DeleteSimple(endpoint, result)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao excluir smart rule: %w", err)
 	}

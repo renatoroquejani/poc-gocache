@@ -62,6 +62,11 @@ func (c *Client) setAuthHeaders(req *resty.Request) *resty.Request {
 
 // Get realiza uma requisição GET para a API do Gocache
 func (c *Client) Get(endpoint string, result interface{}) (*resty.Response, error) {
+	return c.GetWithQueryParams(endpoint, nil, result)
+}
+
+// GetWithQueryParams realiza uma requisição GET com query parameters para a API do Gocache
+func (c *Client) GetWithQueryParams(endpoint string, queryParams map[string]string, result interface{}) (*resty.Response, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
 	req := c.httpClient.R().
 		SetResult(result).
@@ -69,8 +74,16 @@ func (c *Client) Get(endpoint string, result interface{}) (*resty.Response, erro
 	
 	req = c.setAuthHeaders(req)
 	
+	// Adiciona query parameters se fornecidos
+	if queryParams != nil {
+		req.SetQueryParams(queryParams)
+	}
+	
 	log.Printf("Enviando GET para: %s", url)
 	log.Printf("Headers: %v", req.Header)
+	if len(queryParams) > 0 {
+		log.Printf("Query Params: %v", queryParams)
+	}
 	log.Printf("API Key: %s (primeiros 5 caracteres)", c.apiKey[:5])
 	
 	resp, err := req.Get(url)
@@ -87,6 +100,11 @@ func (c *Client) Get(endpoint string, result interface{}) (*resty.Response, erro
 
 // Post realiza uma requisição POST para a API do Gocache
 func (c *Client) Post(endpoint string, body, result interface{}) (*resty.Response, error) {
+	return c.doRequest("POST", endpoint, body, result)
+}
+
+// doRequest realiza uma requisição genérica para a API do Gocache
+func (c *Client) doRequest(method, endpoint string, body, result interface{}) (*resty.Response, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
 	req := c.httpClient.R().
 		SetResult(result).
@@ -181,8 +199,23 @@ func (c *Client) Post(endpoint string, body, result interface{}) (*resty.Respons
 		req.SetFormData(formData)
 	}
 	
-	// Faz a requisição POST
-	resp, err := req.Post(url)
+	// Faz a requisição com o método especificado
+	var resp *resty.Response
+	var err error
+	
+	switch method {
+	case "POST":
+		resp, err = req.Post(url)
+	case "DELETE":
+		resp, err = req.Delete(url)
+	case "PUT":
+		resp, err = req.Put(url)
+	case "PATCH":
+		resp, err = req.Patch(url)
+	default:
+		return nil, fmt.Errorf("método HTTP não suportado: %s", method)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +329,12 @@ func (c *Client) Put(endpoint string, body, result interface{}) (*resty.Response
 }
 
 // Delete realiza uma requisição DELETE para a API do Gocache
-func (c *Client) Delete(endpoint string, result interface{}) (*resty.Response, error) {
+func (c *Client) Delete(endpoint string, body, result interface{}) (*resty.Response, error) {
+	return c.doRequest("DELETE", endpoint, body, result)
+}
+
+// DeleteSimple realiza uma requisição DELETE simples sem body para a API do Gocache
+func (c *Client) DeleteSimple(endpoint string, result interface{}) (*resty.Response, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
 	req := c.httpClient.R().
 		SetResult(result).

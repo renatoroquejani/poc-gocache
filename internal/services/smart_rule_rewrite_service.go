@@ -184,7 +184,7 @@ func (s *SmartRuleRewriteService) DeleteRewriteRule(domain, id string) (*models.
 	var response models.SmartRuleRewriteDeleteResponse
 
 	// Faz a requisiu00e7u00e3o para a API
-	resp, err := s.client.Delete(url, &response)
+	resp, err := s.client.DeleteSimple(url, &response)
 	if err != nil {
 		log.Printf("Erro ao remover regra de redirecionamento: %v", err)
 		return nil, err

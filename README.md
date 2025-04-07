@@ -50,6 +50,55 @@ http://localhost:8081/swagger/index.html
 - `pkg/gocache`: Cliente para API da Gocache
 - `docs`: Documentação do Swagger
 
+## Cenários de Uso para o Projeto ONM
+
+Para o projeto ONM, temos 2 cenários de configuração:
+
+### 1. Domínio já existente
+
+Se o domínio já estiver configurado na Gocache, apenas siga para os passos de criação da rota DNS e Smart Rule.
+
+### 2. Domínio customizado (novo)
+
+Caso o domínio seja novo, será necessário criá-lo antes de adicionar a rota DNS. Importante notar que o endpoint da GoCache para criação de domínio é singular (domain) e não plural (domains):
+
+1. **Criar o domínio**:
+   ```
+   POST /api/v1/domain/{nome-do-dominio}
+   ```
+
+2. **Criar a rota DNS** apontando do subdomínio para a origem (S3 ou site):
+   ```
+   POST /api/v1/dns/{dominio.com.br}
+   ```
+
+3. **Criar a Smart Rule** que faz o rewrite da URL para o accountID correto no S3:
+   ```
+   POST /api/v1/rules/{dominio.com.br}/simplified
+   ```
+
+A rota Simplified já cria as 4 configurações padrão para o funcionamento completo da rota.
+
+### Informações Importantes
+
+#### Gerenciamento de IDs
+
+Cada recurso criado na Gocache gera um ID único:
+
+- Cada domínio criado gera um ID
+- Cada rota DNS criada gera um record ID
+- Cada regra (rule) criada gera um ID
+
+É fundamental armazenar esses IDs em um banco de dados para facilitar a manutenção futura, atualizações ou exclusões dos recursos.
+
+#### Configuração de DNS no Provedor
+
+O usuário precisará configurar o DNS no seu provedor para apontar para a Gocache:
+
+- A Gocache gera um domínio próprio para configuração no CNAME
+- O formato desse domínio é: `subdominio.dominio.cdn.gocache.net`
+- O cliente deve criar um registro CNAME no seu provedor de DNS apontando o subdomínio para este endereço da Gocache
+
 ## Para Mais Informações
 
 Consulte o arquivo `GUIA_DE_USO.md` para instruções detalhadas sobre como usar a API.

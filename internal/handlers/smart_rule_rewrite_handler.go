@@ -262,7 +262,7 @@ func (h *SmartRuleRewriteHandler) GetSimplifiedRuleForm(c *gin.Context) {
 	
 	// Faz a requisição para API de domínios da GoCache
 	var domainResponse models.DomainListResponse
-	endpoint := "/domains"
+	endpoint := "/domain"
 	
 	_, err := h.service.GetClient().Get(endpoint, &domainResponse)
 	if err != nil {
@@ -272,10 +272,10 @@ func (h *SmartRuleRewriteHandler) GetSimplifiedRuleForm(c *gin.Context) {
 	
 	// Converte para o formato esperado na resposta
 	domainOptions := make([]models.DomainOption, 0)
-	for _, domain := range domainResponse.Response.Domains {
+	for _, domainName := range domainResponse.Response.Domains {
 		domainOptions = append(domainOptions, models.DomainOption{
-			Name:        domain.Name,
-			DisplayName: domain.Name,
+			Name:        domainName,
+			DisplayName: domainName,
 		})
 	}
 	

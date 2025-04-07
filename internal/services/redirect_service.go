@@ -60,7 +60,7 @@ func (s *RedirectService) DeleteRedirect(domain string, id int) (*models.Redirec
 	endpoint := fmt.Sprintf("/redirects/%s/%d", domain, id)
 	response := &models.RedirectDeleteResponse{}
 
-	_, err := s.client.Delete(endpoint, response)
+	_, err := s.client.DeleteSimple(endpoint, response)
 	if err != nil {
 		log.Printf("Erro ao excluir regra de redirecionamento: %v", err)
 		return nil, fmt.Errorf("erro ao excluir regra de redirecionamento: %w", err)
