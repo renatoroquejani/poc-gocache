@@ -70,10 +70,10 @@ type SmartRuleRewriteUpdateResponse struct {
 
 // SmartRuleSimplifiedRequest representa uma requisição simplificada para criar uma regra padrão
 type SmartRuleSimplifiedRequest struct {
-	Domain       string `json:"domain" binding:"required"`         // Domínio completo (será usado como CORS e host)
-	ParentDomain string `json:"parent_domain" binding:"required"` // Domínio principal (exod.com.br)
-	BucketURL    string `json:"bucket_url" binding:"required"`    // URL do bucket (será usado como destino e host)
-	AccountID    string `json:"account_id" binding:"required"`    // ID da conta (será usado no rewrite_uri)
+	Domain       string `json:"domain" binding:"required"`        // Subdomínio (campo unificado com nome consistente)
+	ParentDomain string `json:"parent_domain" binding:"required"` // Domínio principal já existente na GoCache (ex: sites.kodestech.com.br)
+	BucketURL    string `json:"bucket_url" binding:"required"`    // URL do bucket (ex: onm-landing-pages.s3-website-us-east-1.amazonaws.com)
+	AccountID    string `json:"account_id" binding:"required"`    // ID da conta (ex: cliente-1)
 }
 
 // SmartRuleSimplifiedFormResponse representa a resposta para o formulário de criação de regra simplificada
@@ -83,6 +83,6 @@ type SmartRuleSimplifiedFormResponse struct {
 
 // DomainOption representa uma opção de domínio para seleção no formulário
 type DomainOption struct {
-	Name        string `json:"name"`        // Nome do domínio (exod.com.br)
+	Name        string `json:"name"`         // Nome do domínio (exod.com.br)
 	DisplayName string `json:"display_name"` // Nome para exibição
 }

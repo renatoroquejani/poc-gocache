@@ -34,7 +34,7 @@ func extractURLFromMarkdown(input string) string {
 	if !strings.Contains(input, "[") && !strings.Contains(input, "]") {
 		return input
 	}
-	
+
 	// Regex para extrair URL de formatos como [url](url) ou [text](url)
 	re := regexp.MustCompile(`\[([^\]]*)\]\(([^\)]*)\)`)
 	matches := re.FindStringSubmatch(input)
@@ -42,7 +42,7 @@ func extractURLFromMarkdown(input string) string {
 		// O segundo grupo de captura (matches[2]) contu00e9m a URL real
 		return matches[2]
 	}
-	
+
 	// Tenta outro mu00e9todo se o regex nu00e3o funcionar
 	if strings.Contains(input, "]") && strings.Contains(input, "(") {
 		parts := strings.Split(input, "](")
@@ -54,7 +54,7 @@ func extractURLFromMarkdown(input string) string {
 			return url
 		}
 	}
-	
+
 	// Retorna a entrada original se nenhum mu00e9todo funcionar
 	return input
 }
@@ -118,6 +118,10 @@ func (s *SmartRuleRewriteService) CreateRewriteRule(request *models.SmartRuleRew
 		// Imprimir para debug
 		log.Printf("CORS original: %s, CORS limpo: %s", request.Action.CrossOrigin, corsValue)
 	}
+
+	// Configuração SSL completa conforme documentação
+	formData["action[ssl_mode]"] = "partial" // Valores válidos: off, flexible, full
+	log.Printf("Configurando SSL full com certificado compartilhado")
 
 	// Constru00f3i a URL da requisiu00e7u00e3o
 	// Formata o endpoint conforme documentau00e7u00e3o da GoCache
@@ -201,18 +205,18 @@ func (s *SmartRuleRewriteService) DeleteRewriteRule(domain, id string) (*models.
 
 // CreateSimplifiedRule cria uma regra de redirecionamento padrão com parâmetros simplificados
 func (s *SmartRuleRewriteService) CreateSimplifiedRule(request *models.SmartRuleSimplifiedRequest) (*models.SmartRuleRewriteCreateResponse, error) {
-	log.Printf("Criando regra de redirecionamento padrão para domínio: %s, bucket: %s, conta: %s",
+	log.Printf("Criando regra de redirecionamento padrão para subdomínio: %s, bucket: %s, conta: %s",
 		request.Domain, request.BucketURL, request.AccountID)
-	
-	// Valida e ajusta o domínio para ter https://
+
+	// Valida e ajusta o domínio para ter http:// (requerido pelo CORS da GoCache)
 	cors := request.Domain
 	if !strings.HasPrefix(cors, "http://") && !strings.HasPrefix(cors, "https://") {
-		cors = "https://" + cors
+		cors = "http://" + cors // Forçando HTTP como padrão
 	}
-	
+
 	// Usa o domínio principal fornecido pelo usuário
 	log.Printf("Usando domínio principal %s para criar regra no subdomínio %s", request.ParentDomain, request.Domain)
-	
+
 	// Cria o request completo para a API
 	completeRequest := &models.SmartRuleRewriteCreateRequest{
 		// Usa o domínio principal como alvo, mas configura o host para o subdomínio
@@ -224,19 +228,19 @@ func (s *SmartRuleRewriteService) CreateSimplifiedRule(request *models.SmartRule
 		},
 		Action: models.SmartRuleRewriteAction{
 			CrossOrigin: cors,
-			RewriteURI: "/" + request.AccountID + "/$1",
+			RewriteURI:  "/" + request.AccountID + "/$1",
 			RewriteHost: request.BucketURL,
 			Destination: request.BucketURL,
 		},
 	}
-	
+
 	// Log detalhado da configuração que será enviada para GoCache
-	log.Printf("DETALHES DA CONFIGURAÇÃO GOCACHE: Enviando para domínio principal '%s', com Host='%s', RewriteHost='%s', BucketURL='%s'", 
-		completeRequest.Domain, 
-		completeRequest.Match.Host, 
+	log.Printf("DETALHES DA CONFIGURAÇÃO GOCACHE: Enviando para domínio principal '%s', com Host='%s', RewriteHost='%s', BucketURL='%s'",
+		completeRequest.Domain,
+		completeRequest.Match.Host,
 		completeRequest.Action.RewriteHost,
 		completeRequest.Action.Destination)
-	
+
 	// Usa o método existente para criar a regra
 	return s.CreateRewriteRule(completeRequest)
 }
